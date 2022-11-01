@@ -1,0 +1,39 @@
+name: OSS Scanning using FOSSA
+on:
+  workflow_call:
+    secrets:
+      FOSSA_PUBLIC_KEY:
+        required: true
+jobs:
+  fossa-scan:
+    name: Run fossa scan on repository
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
+    container:
+      image: ghcr.io/splunk/oss-scanning
+    steps:
+      - uses: actions/checkout@v3
+      - run: |
+          echo "Running FOSSA scan"
+          fossa analyze -p ${{ github.repository }} -b ${{ github.ref_name }} --team "GithubPublic"
+        shell: bash
+    env:
+      FOSSA_API_KEY: ${{ secrets.FOSSA_PUBLIC_KEY }}
+
+  fossa-test:
+    name: Fetch fossa results
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
+    needs: fossa-scan
+    container:
+      image: ghcr.io/splunk/oss-scanning
+    steps:
+      - run: |
+          bash /oss/scripts/fossa-test.sh
+          sleep 30s
+          python3 /oss/scripts/alert_mode.py --github_repo ${{ github.repository }} --fossa_api_key $FOSSA_API_KEY --github_revision ${{ github.sha }} --fail_pipeline "true"
+        shell: bash
+    env:
+      FOSSA_API_KEY: ${{ secrets.FOSSA_PUBLIC_KEY }}
+      github_repo: ${{ github.repository }}
+      github_revision: ${{ github.sha }}
