@@ -12,7 +12,7 @@ jobs:
     container:
       image: ghcr.io/splunk/oss-scanning
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
       - run: |
           echo "Running FOSSA scan"
           fossa analyze -p ${{ github.repository }} -b ${{ github.ref_name }} --team "GithubPublic"
